@@ -1,0 +1,36 @@
+---
+title: "Visualisation of Air Monitor Data"
+author: "Wolfgang Huber"
+format: html
+---
+
+```{r, message = FALSE}
+#| label: load
+xr = readxl::read_excel("The historical data of Qingping Air Monitor.xlsx")
+xr$Time = as.POSIXct(xr$Time, format = "%d/%m/%Y %H:%M")
+xr
+dplyr::last(xr$Time)
+```
+
+Remove the first 8 hours since data may be unreliable
+
+```{r}
+xrf = dplyr::filter(xr, (xr$Time - xr$Time[1]) > as.difftime("8", format = "%H"))
+```
+
+```{r}
+#| label: pivot
+library("tidyr")
+x = pivot_longer(xrf, cols = !Time)
+```
+
+```{r}
+#| label: plot
+#| fig-dim: !expr c(10, 8)
+#| out-width: 100%
+library("ggplot2")
+ggplot(x, aes(x = Time, y = value)) + geom_line() +
+  facet_wrap( ~name, ncol = 1, scales = "free") +
+  scale_x_datetime(breaks = "1 day", minor_breaks = "6 hours",
+                   date_labels = "%d.%b")
+```
