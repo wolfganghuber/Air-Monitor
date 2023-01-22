@@ -26,7 +26,7 @@ x = pivot_longer(xrf, cols = !Time)
 
 ```{r}
 #| label: plot
-#| fig-dim: !expr c(10, 8)
+#| fig-dim: !expr c(10, 11)
 #| out-width: 100%
 library("ggplot2")
 ggplot(x, aes(x = Time, y = value)) + geom_line() +
