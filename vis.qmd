@@ -11,7 +11,13 @@ Load the data file from the QingPing Air Monitor
 ```{r}
 #| label: load1
 #| message: FALSE
-xr = readxl::read_excel("2023-01-09--02-09.xlsx")
+xl = lapply(
+  c("2023-01-09--02-09.xlsx",
+    "The historical data of Qingping Air Monitor.xlsx"), 
+  readxl::read_excel) |> 
+  dplyr::bind_rows() 
+xr = xl[!duplicated(xl), ]
+
 xr$Time = as.POSIXct(xr$Time, format = "%d/%m/%Y %H:%M")
 xr
 dplyr::last(xr$Time)
@@ -51,5 +57,5 @@ library("ggplot2")
 ggplot(x, aes(x = Time, y = value, col = where)) + geom_point(size = 0.5) +
   facet_wrap( ~name, ncol = 1, scales = "free") +
   scale_x_datetime(breaks = "1 day", minor_breaks = "6 hours",
-                   date_labels = "%d%b")
+                   date_labels = "%e.%m.")
 ```
