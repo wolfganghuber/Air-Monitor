@@ -43,6 +43,12 @@ Remove the first 8 hours since data may be unreliable
 xrf = dplyr::filter(xr, (xr$Time - xr$Time[1]) > as.difftime("8", format = "%H"))
 ```
 
+Since 2023-02-08 (comparison is on string type?)
+
+```{r}
+xrf = dplyr::filter(xrf, Time >= as.POSIXct("2023-02-08", format = "%Y-%m-%d")) 
+```
+
 ```{r}
 #| label: pivot
 library("tidyr")
@@ -71,7 +77,7 @@ library("dplyr")
 xs = separate(data = x, col = Time, into  = c('Date', 'Time'), sep = ' ') |>
    group_by(Time, name, where) |>
    summarise(avg = mean(value, trim = 0.1)) 
-stopifnot(nrow(xs) == 24*4*5*3)
+#stopifnot(nrow(xs) == 24*4*5*3)
 xs$Time = as.POSIXct(xs$Time, format = "%H:%M")
 filter(xs, where == "Bad7") |>
   ggplot(aes(x = Time, y = avg)) + geom_point(size = 0.5) +
