@@ -12,11 +12,12 @@ Load the data file from the QingPing Air Monitor
 #| label: load1
 #| message: FALSE
 xl = lapply(
-  c("2023-01-09--02-09.xlsx",
+  c("2023-01-09--02-09.xlsx", "2023-01-09--03-19.xlsx", 
     "The historical data of Qingping Air Monitor.xlsx"), 
-  readxl::read_excel) |> 
-  dplyr::bind_rows() 
-xr = xl[!duplicated(xl), ]
+  readxl::read_excel) 
+
+xr = dplyr::bind_rows(xl) 
+xr = xr[!duplicated(xr), ]
 
 xr$Time = as.POSIXct(xr$Time, format = "%d/%m/%Y %H:%M")
 xr
