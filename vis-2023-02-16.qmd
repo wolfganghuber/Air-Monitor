@@ -1,32 +1,41 @@
 ---
-title: "Visualisation of Air Monitor Data"
+title: "Visualisierung QingPing Air Monitor Daten"
 author: "Wolfgang Huber"
 format: 
   html:
+    embed-resources: true
     page-layout: full
 ---
 
-Load the data file from the QingPing Air Monitor
+```{r}
+#| label: initialize
+#| echo: false
+knitr::opts_chunk$set(cache = TRUE, autodep = TRUE, echo = FALSE)
+```
 
 ```{r}
 #| label: load1
 #| message: FALSE
-# files = c("2023-01-09--02-09.xlsx", "2023-01-09--03-19.xlsx", "The historical data of Qingping Air Monitor.xlsx")
-files = c("The\ historical\ data\ of\ Endemannstr12\ 20240930-20241224.xlsx")
-xl = lapply(files, readxl::read_excel) 
-xr = dplyr::bind_rows(xl) 
-xr = xr[!duplicated(xr), ]
+# Load data
+xl = lapply(
+  c("2023-01-09--02-09.xlsx",
+    "The historical data of Qingping Air Monitor.xlsx"), 
+  readxl::read_excel) |> 
+  dplyr::bind_rows() 
+xr = xl[!duplicated(xl), ]
 
 xr$Time = as.POSIXct(xr$Time, format = "%d/%m/%Y %H:%M")
 xr
+```
+```{r}
+#| results: "hide"
 dplyr::last(xr$Time)
 ```
-
-Add locations from manual notes
 
 ```{r}
 #| label: load2
 #| message: FALSE
+# Add locations from manual notes
 locs = readr::read_csv("locations.csv")
 xr$where = factor(NA, levels = sort(unique(locs$where)))
 for (i in seq_len(nrow(locs))) {
@@ -36,18 +45,9 @@ for (i in seq_len(nrow(locs))) {
 }
 ```
 
-<!-- Remove the first 8 hours since data may be unreliable -->
-
 ```{r}
-#| eval: false
-#|echo: false
+# Remove the first 8 hours since data may be unreliable
 xrf = dplyr::filter(xr, (xr$Time - xr$Time[1]) > as.difftime("8", format = "%H"))
-```
-
-Date range
-```{r}
-xrf = dplyr::filter(xr, Time >= as.POSIXct("2024-12-06", format = "%Y-%m-%d"),
-                        Time <= as.POSIXct("2024-12-20", format = "%Y-%m-%d")) 
 ```
 
 ```{r}
@@ -67,21 +67,35 @@ ggplot(x, aes(x = Time, y = value, col = where)) + geom_point(size = 0.5) +
                    date_labels = "%e.%m.")
 ```
 
-Gibt es einen Tagesrhythmus?
+Gibt es einen Tagesrhythmus? Gezeigt wird der Mittelwert zu jeder Tageszeit, über den gesamten Zeitraum für die Werte nur aus Bad W7.
 
 ```{r}
-#| label: plotdaily
+#| label: plotdaily1
 #| fig-dim: !expr c(6, 6)
 #| out-width: 100%
 #| message: FALSE
 library("dplyr")
-xs = separate(data = x, col = Time, into  = c('Date', 'Time'), sep = ' ') |>
-   group_by(Time, name, where) |>
-   summarise(avg = mean(value, trim = 0.1)) 
-#stopifnot(nrow(xs) == 24*4*5*3)
-xs$Time = as.POSIXct(xs$Time, format = "%H:%M")
-filter(xs, where == "Bad7") |>
+x2 = separate(data = x, col = Time, into  = c('Date', 'Time'), sep = ' ') |>
+   group_by(Time, name, where) 
+x2$Time = as.POSIXct(x2$Time, format = "%H:%M")
+
+xavg = summarise(x2, avg = mean(value, trim = 0.1)) 
+stopifnot(nrow(xavg) == 24*4*5*3)
+filter(xavg, where == "Bad7") |>
   ggplot(aes(x = Time, y = avg)) + geom_point(size = 0.5) +
   facet_wrap( ~name, ncol = 1, scales = "free") +
   scale_x_datetime(breaks = "2 hour", date_labels = "%H:%M")
+```
+
+<!--- Anderer Versuch der Visualisierung -->
+```{r}
+#| label: plotdaily2
+#| fig-dim: !expr c(6, 6)
+#| out-width: 100%
+#| message: FALSE
+#| eval: false
+#| echo: false
+ggplot(x2, aes(x = factor(Time), y = value)) +
+  geom_violin() + 
+  facet_wrap( ~name, ncol = 1, scales = "free") 
 ```
