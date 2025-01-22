@@ -9,10 +9,9 @@ format:
 Load the data file from the QingPing Air Monitor
 
 ```{r}
-#| label: load1
-#| message: FALSE
-# files = c("2023-01-09--02-09.xlsx", "2023-01-09--03-19.xlsx", "The historical data of Qingping Air Monitor.xlsx")
-files = c("The\ historical\ data\ of\ Endemannstr12\ 20240930-20241224.xlsx")
+#| label: loaddat
+#| message: false
+files = c("The historical data of Endemannstr12 20241025-20250122.xlsx")
 xl = lapply(files, readxl::read_excel) 
 xr = dplyr::bind_rows(xl) 
 xr = xr[!duplicated(xr), ]
@@ -22,11 +21,13 @@ xr
 dplyr::last(xr$Time)
 ```
 
-Add locations from manual notes
 
 ```{r}
-#| label: load2
-#| message: FALSE
+#| label: loadloc
+#| message: false
+#| eval: false
+#| echo: false
+# Add locations from manual notes
 locs = readr::read_csv("locations.csv")
 xr$where = factor(NA, levels = sort(unique(locs$where)))
 for (i in seq_len(nrow(locs))) {
@@ -36,24 +37,19 @@ for (i in seq_len(nrow(locs))) {
 }
 ```
 
-<!-- Remove the first 8 hours since data may be unreliable -->
-
-```{r}
-#| eval: false
-#|echo: false
-xrf = dplyr::filter(xr, (xr$Time - xr$Time[1]) > as.difftime("8", format = "%H"))
-```
-
 Date range
+
 ```{r}
-xrf = dplyr::filter(xr, Time >= as.POSIXct("2024-12-06", format = "%Y-%m-%d"),
-                        Time <= as.POSIXct("2024-12-20", format = "%Y-%m-%d")) 
+#| label: daterange
+#| message: FALSE
+xr = dplyr::filter(xr, Time >= as.POSIXct("2025-01-12", format = "%Y-%m-%d")) 
 ```
 
 ```{r}
 #| label: pivot
 library("tidyr")
-x = pivot_longer(xrf, cols = !matches("Time|where"))
+# x = pivot_longer(xr, cols = !matches("Time|where"))
+x = pivot_longer(xr, cols = !matches("Time"))
 ```
 
 ```{r}
@@ -61,7 +57,8 @@ x = pivot_longer(xrf, cols = !matches("Time|where"))
 #| fig-dim: !expr c(15, 11)
 #| out-width: 100%
 library("ggplot2")
-ggplot(x, aes(x = Time, y = value, col = where)) + geom_point(size = 0.5) +
+# ggplot(x, aes(x = Time, y = value, col = where)) + geom_point(size = 0.5) +
+ggplot(x, aes(x = Time, y = value)) + geom_point(size = 0.5) +
   facet_wrap( ~name, ncol = 1, scales = "free") +
   scale_x_datetime(breaks = "1 day", minor_breaks = "6 hours",
                    date_labels = "%e.%m.")
@@ -85,13 +82,13 @@ Gibt es einen Tagesrhythmus?
 #| out-width: 100%
 #| message: FALSE
 library("dplyr")
-xs = separate(data = x, col = Time, into  = c('Date', 'Time'), sep = ' ') |>
-   group_by(Time, name, where) |>
-   summarise(avg = mean(value, trim = 0.1)) 
-#stopifnot(nrow(xs) == 24*4*5*3)
-xs$Time = as.POSIXct(xs$Time, format = "%H:%M")
-filter(xs, where == "Bad7") |>
+mutate(x, Time = format(Time)) |>
+  separate_wider_delim(cols = Time, names  = c('Date', 'Time'), delim = ' ') |>
+    # group_by(Time, name, where) |>
+    group_by(Time, name) |>
+    summarise(avg = mean(value, trim = 0.1)) |>
+  mutate(Time = as.POSIXct(Time, format = "%H:%M")) |>
   ggplot(aes(x = Time, y = avg)) + geom_point(size = 0.5) +
-  facet_wrap( ~name, ncol = 1, scales = "free") +
-  scale_x_datetime(breaks = "2 hour", date_labels = "%H:%M")
+    facet_wrap( ~name, ncol = 1, scales = "free") +
+    scale_x_datetime(breaks = "2 hour", date_labels = "%H:%M")
 ```
