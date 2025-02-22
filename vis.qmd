@@ -11,7 +11,7 @@ Load the data file from the QingPing Air Monitor
 ```{r}
 #| label: loaddat
 #| message: false
-files = c("The historical data of Endemannstr12 20241025-20250122.xlsx")
+files = c("The historical data of Endemannstr12 20241125-20250223.xlsx")
 xl = lapply(files, readxl::read_excel) 
 xr = dplyr::bind_rows(xl) 
 xr = xr[!duplicated(xr), ]
@@ -42,7 +42,7 @@ Date range
 ```{r}
 #| label: daterange
 #| message: FALSE
-xr = dplyr::filter(xr, Time >= as.POSIXct("2025-01-12", format = "%Y-%m-%d")) 
+xr = dplyr::filter(xr, Time >= as.POSIXct("2025-01-27", format = "%Y-%m-%d")) 
 ```
 
 ```{r}
@@ -64,6 +64,8 @@ ggplot(x, aes(x = Time, y = value)) + geom_point(size = 0.5) +
                    date_labels = "%e.%m.")
 ```
 
+Just PM2.5 vs Humidity
+
 ```{r}
 #| label: plotall2
 #| fig-dim: !expr c(15, 3)
@@ -72,6 +74,18 @@ dplyr::filter(x, name %in% c("PM2.5 (μg/m³)", "Humidity (%RH)")) |>
   ggplot(aes(x = Time, y = value, col = name)) + geom_point(size = 0.5) +
     scale_x_datetime(breaks = "1 day", minor_breaks = "6 hours",
                      date_labels = "%e.%m.")
+```
+
+Scatterplot
+
+```{r}
+#| label: plotall3
+#| fig-dim: !expr c(5, 3)
+#| out-width: 60%
+dplyr::filter(x, name %in% c("PM2.5 (μg/m³)", "Temperature (°C)", "Humidity (%RH)")) |>
+  pivot_wider(names_from = name, values_from = value) |>
+  ggplot(aes(x = `Temperature (°C)`, y = `PM2.5 (μg/m³)`, col = `Humidity (%RH)`)) +
+    geom_point(size = 0.5) 
 ```
 
 Gibt es einen Tagesrhythmus?
